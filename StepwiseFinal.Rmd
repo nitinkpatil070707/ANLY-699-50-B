@@ -1,0 +1,192 @@
+---
+title: "Stepwise Regreesion Final"
+author: "Nitin"
+date: "12/9/2020"
+output:
+  word_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+library(readxl)
+data <- read_excel("data.xlsx")
+#View(data)
+
+library(tidyverse)
+#str(data)
+
+names(data)<-str_replace_all(names(data), c(" " = "." , "," = ""))
+df11 <- select(data, -c(3,5,7,9,11,13,15,17,19,21,23,25))
+```
+
+```{r}
+df11 = na.omit(df11)
+#str(df2)
+df11$Months <- scale(df11$Month)
+data_scaled <- as.data.frame(scale(df11[,c(2:14)], center = TRUE))
+```
+
+```{r}
+InterceptModel <- lm(Plywood.Price~1, data = data_scaled)
+FullModel <- lm(Plywood.Price~., data = data_scaled)
+```
+
+```{r}
+step(FullModel, direction = 'backward', scope = formula(FullModel))
+```
+
+```{r}
+step(InterceptModel, direction = 'forward', scope = formula(FullModel))
+```
+
+```{r}
+step(InterceptModel, direction = 'both', scope = formula(FullModel))
+```
+
+```{r}
+library(car)
+Model1<- lm(Plywood.Price ~ Hard.log.Price + Soft.sawnwood.Price + 
+    Hide.Price + Months + Hard.sawnwood.Price + Rubber.Price + 
+    Copra.Price + Wood.pulp.Price + Coarse.wool.Price + Cotton.Price + 
+    Softlog.Price, data = data_scaled)
+summary(Model1)
+vif(Model1)
+```
+
+### Remove month
+
+```{r}
+Model2<- lm(Plywood.Price ~ Hard.log.Price + Soft.sawnwood.Price + Hide.Price + Hard.sawnwood.Price + Rubber.Price + Copra.Price + Wood.pulp.Price + Coarse.wool.Price + Cotton.Price + Softlog.Price, data = data_scaled)
+summary(Model2)
+vif(Model2)
+```
+
+```{r}
+
+```
+
+
+### Remoe Hard.sawnwood.Price 
+
+```{r}
+Model3<- lm(Plywood.Price ~ Hard.log.Price + Soft.sawnwood.Price + Hide.Price + Rubber.Price + Copra.Price + Wood.pulp.Price + Coarse.wool.Price + Cotton.Price + Softlog.Price, data = data_scaled)
+summary(Model3)
+vif(Model3)
+```
+
+### Remove Rubber.Price
+
+```{r}
+Model4<- lm(Plywood.Price ~ Hard.log.Price + Soft.sawnwood.Price + Hide.Price + Copra.Price + Wood.pulp.Price + Coarse.wool.Price + Cotton.Price + Softlog.Price, data = data_scaled)
+summary(ModelVF4)
+vif(ModelVF4)
+```
+
+```{r}
+
+```
+
+
+```{r}
+plot(ModelVF4)
+```
+
+```{r}
+library(gvlma)
+gvModel <- gvlma(ModelVF4)
+summary(gvModel)
+```
+
+```{r}
+#Plywood.Price <- (5.914006e-02*2.01 + -1.887577e-01*205 +-1.737900e-01*96.75 + 8.049663e-01*187.96 + 3.904363e-02*124.23 + 2.037899e-01*798.83 +  -1.172643e-01*-1.680612 + 3.545756e-01 * 210.05)
+```
+
+```{r}
+plot(ModelVF4$residuals ~ ModelVF4$fitted.values, xlab = "Fitted Values", ylab = "Residuals")
+abline(0,0)
+```
+
+```{r}
+tail(data_scaled)
+```
+
+
+```{r}
+#Vrable_Prediction <- data.frame(Cotton.Price=2.01, Copra.Price = 205, Hide.Price = 96.75, Hard.log.Price = 187.96, Softlog.Price = 124.23, Wood.pulp.Price = 798.83 , Months = -1.680612 , Soft.sawnwood.Price = 210.05)
+
+Vrable_Prediction <- data.frame(Cotton.Price=0.3165075, Copra.Price = -1.253887, Hide.Price = 0.9731722, Hard.log.Price = -0.9159536, Softlog.Price = -1.360644, Wood.pulp.Price = 0.8848523 , Months = -1.680612 , Soft.sawnwood.Price = -2.426037)
+
+Predicted_Value <- predict(ModelVF4, Vrable_Prediction, interval="predict")
+Predicted_Value
+
+```
+
+
+```{r}
+conf <- predict(ModelVF4, Vrable_Prediction, interval="confidence")
+conf
+```
+
+
+```{r}
+conf %*% c(0, -1, 1)
+```
+
+```{r}
+Predicted_Value %*% c(0, -1, 1)
+```
+
+```{r}
+conf[1] == Predicted_Value [1]
+```
+
+```{r}
+data_scaled[20, ]
+```
+```{r}
+coef(summary(ModelVF4))[1,1]
+```
+
+```{r}
+coef(summary(ModelVF4))
+```
+
+```{r}
+set.seed(100)
+newdata=sample(1:nrow(data_scaled), 0.7*nrow(data_scaled))
+train=data_scaled[newdata,]
+test=data_scaled[-newdata,]
+```
+
+### Check For model accuracy
+### RMSE = root mean squared error
+
+```{r}
+pred_reg_train <- predict(ModelVF4, newdata = train)
+pred_reg_train
+
+```
+
+```{r}
+
+reg_rmse_train <- sqrt(-mean(pred_reg_train - train$Plywood.Price))
+reg_rmse_train
+
+```
+
+
+```{r}
+
+pred_reg_test <- predict(ModelVF4, newdata = test)
+
+reg_rmse_test <- sqrt(mean((pred_reg_test - test$Plywood.Price)))
+reg_rmse_test
+
+```
+
+

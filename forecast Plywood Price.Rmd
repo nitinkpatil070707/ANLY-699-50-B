@@ -1,0 +1,104 @@
+---
+title: "FinalProject"
+author: "Nitin"
+date: "12/3/2020"
+output:
+  word_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(readxl)
+Data <- read_excel("data.xlsx")
+```
+
+```{r}
+library(tidyverse)
+```
+
+```{r}
+df <- select(Data, -c(3,5,7,9,11,13,15,17,19,21,23,25))
+str(df)
+```
+
+```{r}
+names(df)<-str_replace_all(names(df), c(" " = "." , "," = "" ))
+str(df)
+```
+
+```{r}
+df = na.omit(df)
+df$Month <- as.Date(df$Month, format = "%m/%d/%y")
+```
+
+```{r}
+head(df)
+```
+
+```{r}
+tail(df)
+```
+
+
+```{r}
+plot(Plywood.Price~Month,data=df)
+```
+
+
+
+
+```{r}
+df1 <- select(df, c(1,9))
+#str(df1)
+```
+
+```{r}
+plot(Plywood.Price~Month,data=df1)
+```
+
+
+```{r}
+#ts_df1 <- ts(df1$Plywood.Price, start=min(df1$Month),end = max(df1$Month))
+ts_df1 <- ts(df1$Plywood.Price, start=c(1990, 4),end = c(2017, 6), frequency=12)
+```
+
+```{r}
+ts_df1
+```
+
+
+```{r}
+library(forecast)
+```
+
+```{r}
+ts_df1_OPT <- auto.arima(ts_df1)
+```
+
+
+```{r}
+ts_df1_OPT
+```
+
+
+```{r}
+coef(ts_df1_OPT)
+```
+
+```{r}
+predict(ts_df1_OPT,n.ahead =5, se.fit=T)
+```
+
+
+```{r}
+ts_df1_OPT_Forcast<-forecast(object=ts_df1_OPT,h=10)
+plot(ts_df1_OPT_Forcast, xlab = "Year", ylab = "Plywood.Price", main = "Plywood.Price vs Year")
+```
+
+
+
+
